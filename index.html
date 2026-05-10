@@ -220,18 +220,16 @@ h2 {
   padding: 2rem 1.5rem 1.5rem;
   position: relative;
   box-shadow: var(--shadow);
-  overflow: hidden;
 }
 
 /* Watermark del logo de empresa (en chart container) */
 .chart-watermark {
   position: absolute;
-  right: -3%;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 42%;
-  max-width: 460px;
-  aspect-ratio: 1;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  max-width: 480px;
   opacity: 0;
   transition: opacity .5s cubic-bezier(.4,0,.2,1);
   pointer-events: none;
@@ -239,13 +237,17 @@ h2 {
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Máscara radial: el logo se desvanece en los bordes para integrarse con el fondo */
+  overflow: hidden;
+  /* Máscara radial: el logo se desvanece en los bordes */
   mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 75%);
   -webkit-mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 75%);
 }
 .chart-watermark.visible { opacity: .12; }
 .chart-watermark svg {
-  width: 100%; height: 100%;
+  width: 70%;
+  height: 70%;
+  max-width: 420px;
+  max-height: 420px;
 }
 
 /* Asegurar que el SVG y la leyenda queden por encima del watermark */
@@ -319,7 +321,8 @@ h2 {
   transition: opacity .15s;
   font-family: 'JetBrains Mono', monospace;
   line-height: 1.5;
-  max-width: 280px;
+  width: 240px;
+  max-width: calc(100% - 24px);
   box-shadow: 0 8px 24px rgba(0,0,0,.3);
   z-index: 100;
   border: 1px solid var(--paper);
@@ -723,7 +726,7 @@ footer a:hover { background: var(--highlight); }
 <header class="masthead">
   <div class="masthead-inner">
     <span>Notas sobre valoración · Nº 1</span>
-    <span class="vol">Mayo 2026</span>
+    <span class="vol">Diciembre 2025</span>
     <span>EAFIT · Medellín</span>
   </div>
 </header>
@@ -732,7 +735,7 @@ footer a:hover { background: var(--highlight); }
 
 <!-- HERO -->
 <div class="hero">
-  <div class="eyebrow">Creditos a: Profesor Damodaran (2025)</div>
+  <div class="eyebrow">Inspirado en A. Damodaran (2025)</div>
   <h1 class="title">Del acero<br><em>al silicio.</em></h1>
   <p class="deck">
     En 124 años, la cima del mercado bursátil estadounidense pasó de una acería con un siglo de hierros forjados a una compañía de chips con tres décadas de existencia. La transición no es solo de sectores: es de lógicas de valor.
@@ -896,7 +899,7 @@ footer a:hover { background: var(--highlight); }
         <div>
           <div class="result-label">Fórmula (Damodaran 2025)</div>
           <div class="formula-box">
-            $$\text{Ingresos}^* = \frac{\text{Market Cap} \times (k_e - g)}{\text{Margen} \times \left(1 - \tfrac{g}{ROE}\right)}$$
+            $$R^* = \frac{\text{MCap} \times (k_e - g)}{\text{Margen} \times \left(1 - \tfrac{g}{ROE}\right)}$$
           </div>
         </div>
 
@@ -1175,6 +1178,34 @@ dots.append("text")
 // Hover
 const chartWatermark = document.getElementById("chart-watermark");
 
+function positionTooltip(event) {
+  const container = document.querySelector(".chart-container").getBoundingClientRect();
+  const tooltipNode = tooltip.node();
+  const tipW = tooltipNode.offsetWidth;
+  const tipH = tooltipNode.offsetHeight;
+
+  const offset = 15;
+  const padding = 8;
+
+  const cursorX = event.clientX - container.left;
+  const cursorY = event.clientY - container.top;
+
+  let x = cursorX + offset;
+  let y = cursorY + offset;
+
+  if (x + tipW + padding > container.width) {
+    x = cursorX - tipW - offset;
+  }
+  if (x < padding) x = padding;
+
+  if (y + tipH + padding > container.height) {
+    y = cursorY - tipH - offset;
+  }
+  if (y < padding) y = padding;
+
+  tooltip.style("left", x + "px").style("top", y + "px");
+}
+
 dots.on("mouseenter", function(event, d) {
   d3.select(this).select("circle").transition().duration(150).attr("r", 18);
   const peImplied = (d.threshold / d.income).toFixed(1);
@@ -1192,6 +1223,9 @@ dots.on("mouseenter", function(event, d) {
   `)
   .style("opacity", 1);
 
+  // Posicionar después de pintar para que offsetWidth/Height sean correctos
+  requestAnimationFrame(() => positionTooltip(event));
+
   // Mostrar watermark del logo correspondiente
   const logoKey = presetToLogo[d.id];
   const logoColor = colorMap[d.era];
@@ -1201,12 +1235,7 @@ dots.on("mouseenter", function(event, d) {
     chartWatermark.classList.add("visible");
   }
 })
-.on("mousemove", function(event) {
-  const container = document.querySelector(".chart-container").getBoundingClientRect();
-  tooltip
-    .style("left", (event.clientX - container.left + 15) + "px")
-    .style("top", (event.clientY - container.top + 15) + "px");
-})
+.on("mousemove", positionTooltip)
 .on("mouseleave", function() {
   d3.select(this).select("circle").transition().duration(150).attr("r", 14);
   tooltip.style("opacity", 0);
