@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Del acero al silicio · Umbrales de capitalización 1901–2025</title>
+
+<!-- Open Graph para LinkedIn -->
+<meta property="og:title" content="Del acero al silicio: 124 años de umbrales de capitalización">
+<meta property="og:description" content="Una visualización interactiva de los mensajes de Aswath Damodaran sobre la transición de la economía industrial a la tecnológica, y la calculadora de breakeven revenue. Por Diego Restrepo-Tobón, Universidad EAFIT.">
+<meta property="og:type" content="article">
+<meta name="author" content="Diego Restrepo-Tobón, Universidad EAFIT">
+
+<!-- Tipografías: serif editorial + sans estructural + monoespaciada para datos -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,700;9..144,900&family=Söhne:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- KaTeX para la fórmula -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
+
+<!-- D3 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+
+<style>
+:root {
+  /* Paleta: Royal Blue + grises + blancos */
+  --paper: #ffffff;
+  --paper-deep: #f4f6fa;
+  --paper-deeper: #e8ecf3;
+  --ink: #0f172a;
+  --ink-soft: #334155;
+  --ink-faded: #64748b;
+  --rule: #1e293b;
+
+  /* Royal Blue como protagonista, grises sectoriales como soporte */
+  --industrial: #64748b;       /* gris medio — US Steel, GM */
+  --bridge:     #475569;       /* gris pizarra oscuro — GE */
+  --tech:       #1e3a8a;       /* royal blue profundo — Microsoft, Apple, Nvidia */
+
+  --royal:      #1e40af;        /* Royal Blue principal */
+  --royal-deep: #1e3a8a;        /* Royal Blue profundo para énfasis */
+  --royal-light:#3b82f6;        /* Royal Blue claro para acentos */
+  --accent:     #1e40af;        /* acento editorial */
+  --highlight:  #dbeafe;        /* azul muy claro para resaltar */
+  --highlight-strong: #60a5fa;  /* azul medio para hover/active */
+
+  --shadow: 0 1px 0 rgba(15,23,42,.04), 0 8px 24px -12px rgba(15,23,42,.15);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter Tight', -apple-system, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  line-height: 1.5;
+  font-size: 16px;
+  /* Textura sutil de fondo en azul */
+  background-image:
+    radial-gradient(ellipse at top left, rgba(30,64,175,.05) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(30,58,138,.04) 0%, transparent 50%);
+  background-attachment: fixed;
+}
+
+/* Grano sutil — pseudo-elemento global */
+body::before {
+  content: "";
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .04 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  pointer-events: none;
+  opacity: .35;
+  z-index: 1;
+  mix-blend-mode: multiply;
+}
+
+main { position: relative; z-index: 2; }
+
+/* === HEADER === */
+.masthead {
+  border-bottom: 3px double var(--rule);
+  padding: 1.2rem 0;
+  margin-bottom: 0;
+  background: var(--paper);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(8px);
+  background: rgba(255,255,255,.92);
+}
+.masthead-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: 'Fraunces', serif;
+  font-size: .82rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.masthead-inner .vol { font-style: italic; letter-spacing: .04em; text-transform: none; font-size: .9rem; }
+
+/* === HERO === */
+.hero {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 4rem 2rem 3rem;
+  position: relative;
+}
+
+.eyebrow {
+  font-family: 'Inter Tight', sans-serif;
+  font-size: .72rem;
+  letter-spacing: .25em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.eyebrow::before, .eyebrow::after {
+  content: "";
+  flex: 0 0 2.5rem;
+  height: 1px;
+  background: var(--accent);
+}
+.eyebrow::after { flex: 1; }
+
+h1.title {
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  font-size: clamp(2.4rem, 7vw, 5.6rem);
+  line-height: .95;
+  letter-spacing: -.025em;
+  margin-bottom: 1.5rem;
+  color: var(--ink);
+}
+h1.title em {
+  font-style: italic;
+  font-weight: 300;
+  color: var(--royal);
+}
+
+.deck {
+  font-family: 'Fraunces', serif;
+  font-weight: 300;
+  font-size: clamp(1.1rem, 2vw, 1.45rem);
+  line-height: 1.45;
+  max-width: 720px;
+  color: var(--ink-soft);
+  margin-bottom: 2rem;
+}
+
+.byline {
+  font-size: .85rem;
+  color: var(--ink-faded);
+  border-top: 1px solid var(--rule);
+  padding-top: 1rem;
+  max-width: 720px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+.byline strong { color: var(--ink); font-weight: 600; }
+.byline a { color: var(--accent); text-decoration: none; border-bottom: 1px dotted var(--accent); }
+.byline a:hover { background: var(--highlight); }
+
+/* === SECCIÓN STANDARD === */
+section {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+  border-top: 1px solid var(--rule);
+}
+
+.section-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .72rem;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--ink-faded);
+  margin-bottom: .5rem;
+}
+
+h2 {
+  font-family: 'Fraunces', serif;
+  font-weight: 500;
+  font-size: clamp(1.7rem, 3.5vw, 2.6rem);
+  line-height: 1.05;
+  letter-spacing: -.015em;
+  margin-bottom: 1.2rem;
+  max-width: 900px;
+}
+
+.lede {
+  font-family: 'Fraunces', serif;
+  font-weight: 300;
+  font-size: 1.1rem;
+  line-height: 1.55;
+  max-width: 700px;
+  color: var(--ink-soft);
+  margin-bottom: 2.5rem;
+}
+
+/* === CHART HISTÓRICO === */
+.chart-container {
+  background: var(--paper-deep);
+  border: 1px solid var(--rule);
+  padding: 2rem 1.5rem 1.5rem;
+  position: relative;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+/* Watermark del logo de empresa (en chart container) */
+.chart-watermark {
+  position: absolute;
+  right: -3%;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 42%;
+  max-width: 460px;
+  aspect-ratio: 1;
+  opacity: 0;
+  transition: opacity .5s cubic-bezier(.4,0,.2,1);
+  pointer-events: none;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Máscara radial: el logo se desvanece en los bordes para integrarse con el fondo */
+  mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 75%);
+  -webkit-mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 75%);
+}
+.chart-watermark.visible { opacity: .12; }
+.chart-watermark svg {
+  width: 100%; height: 100%;
+}
+
+/* Asegurar que el SVG y la leyenda queden por encima del watermark */
+.chart-legend, #chart-svg { position: relative; z-index: 1; }
+
+/* Watermark dentro de la calculadora (panel output) */
+.calc-watermark {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 65%;
+  max-width: 320px;
+  aspect-ratio: 1;
+  opacity: 0;
+  transition: opacity .6s cubic-bezier(.4,0,.2,1);
+  pointer-events: none;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 35%, rgba(0,0,0,0) 78%);
+  -webkit-mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 35%, rgba(0,0,0,0) 78%);
+}
+.calc-watermark.visible { opacity: .07; }
+.calc-watermark svg { width: 100%; height: 100%; }
+
+/* El calc-output debe ser relative para contener el watermark absoluto */
+.calc-output { position: relative; overflow: hidden; }
+.calc-output > *:not(.calc-watermark) { position: relative; z-index: 1; }
+
+.chart-legend {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+  font-size: .82rem;
+  font-family: 'Inter Tight', sans-serif;
+  font-weight: 500;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  letter-spacing: .03em;
+}
+.legend-dot {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+}
+.legend-dot.industrial { background: var(--industrial); }
+.legend-dot.bridge { background: var(--bridge); }
+.legend-dot.tech { background: var(--tech); }
+
+#chart-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  font-family: 'Inter Tight', sans-serif;
+}
+
+.tooltip {
+  position: absolute;
+  background: var(--ink);
+  color: var(--paper);
+  padding: .75rem 1rem;
+  font-size: .82rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s;
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1.5;
+  max-width: 280px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.3);
+  z-index: 100;
+  border: 1px solid var(--paper);
+}
+.tooltip strong {
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  font-size: 1rem;
+  display: block;
+  margin-bottom: .35rem;
+}
+.tooltip .tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.tooltip .tooltip-row span:last-child { color: var(--highlight-strong); }
+
+/* === SÍNTESIS POR CATEGORÍA === */
+.synthesis-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-top: 2.5rem;
+}
+.synth-card {
+  border-top: 4px solid var(--ink);
+  padding: 1.25rem 1.25rem 1.5rem;
+  background: var(--paper-deep);
+}
+.synth-card.industrial { border-top-color: var(--industrial); }
+.synth-card.bridge { border-top-color: var(--bridge); }
+.synth-card.tech { border-top-color: var(--tech); }
+
+.synth-card .era {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .7rem;
+  letter-spacing: .1em;
+  color: var(--ink-faded);
+  text-transform: uppercase;
+  margin-bottom: .5rem;
+}
+.synth-card .name {
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  font-size: 1.4rem;
+  margin-bottom: .75rem;
+}
+.synth-card .stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: .35rem 0;
+  border-bottom: 1px dotted var(--ink-faded);
+  font-size: .85rem;
+}
+.synth-card .stat-row:last-child { border: none; }
+.synth-card .stat-row .label { color: var(--ink-faded); }
+.synth-card .stat-row .value {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* === TABLA INTERACTIVA === */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .82rem;
+  margin-top: 1rem;
+  background: var(--paper-deep);
+  box-shadow: var(--shadow);
+}
+.data-table th, .data-table td {
+  padding: .7rem .8rem;
+  text-align: right;
+  border-bottom: 1px solid var(--ink-faded);
+  white-space: nowrap;
+}
+.data-table th {
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 500;
+  font-size: .75rem;
+  letter-spacing: .05em;
+  text-align: center;
+  cursor: pointer;
+  transition: background .15s;
+  position: relative;
+}
+.data-table th.industrial { background: var(--industrial); }
+.data-table th.bridge { background: var(--bridge); }
+.data-table th.tech { background: var(--tech); }
+.data-table th:hover { filter: brightness(1.15); }
+.data-table th:first-child {
+  text-align: left;
+  cursor: default;
+  background: var(--ink);
+}
+.data-table th:first-child:hover { filter: none; }
+.data-table td:first-child {
+  text-align: left;
+  font-family: 'Fraunces', serif;
+  font-weight: 500;
+  color: var(--ink-soft);
+  font-size: .9rem;
+  background: var(--paper);
+}
+.data-table .row-company { font-weight: 700; font-family: 'Fraunces', serif; font-size: 1rem; }
+.data-table .row-company td { background: rgba(0,0,0,.04); }
+
+.table-hint {
+  font-size: .8rem;
+  font-style: italic;
+  color: var(--ink-faded);
+  margin-top: .75rem;
+  font-family: 'Fraunces', serif;
+}
+
+.table-wrapper { overflow-x: auto; }
+
+/* === CALCULADORA === */
+.calculator {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 3rem 2rem;
+  margin: 3rem 0 0;
+  border-top: 8px solid var(--accent);
+  position: relative;
+}
+.calculator::before {
+  content: "Herramienta interactiva";
+  position: absolute;
+  top: -1.5rem;
+  left: 2rem;
+  background: var(--accent);
+  color: var(--paper);
+  padding: .35rem .85rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .72rem;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+}
+
+.calc-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+.calculator h2 {
+  color: var(--paper);
+  margin-bottom: .5rem;
+}
+.calculator .lede { color: rgba(244,237,224,.75); }
+
+.preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+  margin: 2rem 0;
+  align-items: center;
+}
+.preset-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .72rem;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: rgba(244,237,224,.6);
+  margin-right: .5rem;
+}
+.preset-btn {
+  background: transparent;
+  border: 1px solid rgba(244,237,224,.4);
+  color: var(--paper);
+  padding: .55rem 1rem;
+  font-family: 'Inter Tight', sans-serif;
+  font-size: .82rem;
+  font-weight: 500;
+  cursor: pointer;
+  letter-spacing: .02em;
+  transition: all .15s;
+}
+.preset-btn:hover {
+  background: rgba(244,237,224,.1);
+  border-color: var(--paper);
+}
+.preset-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--paper);
+}
+
+.calc-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  margin-top: 1rem;
+}
+
+.calc-inputs { display: flex; flex-direction: column; gap: 1.1rem; }
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+.input-group label {
+  display: flex;
+  justify-content: space-between;
+  font-size: .82rem;
+  font-family: 'Inter Tight', sans-serif;
+  color: rgba(244,237,224,.85);
+  align-items: baseline;
+}
+.input-group label .val {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  color: var(--highlight-strong);
+  font-size: .92rem;
+}
+.input-group input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: rgba(244,237,224,.2);
+  outline: none;
+  cursor: pointer;
+}
+.input-group input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px; height: 18px;
+  background: var(--highlight-strong);
+  border: 2px solid var(--paper);
+  cursor: pointer;
+  border-radius: 0;
+}
+.input-group input[type="range"]::-moz-range-thumb {
+  width: 18px; height: 18px;
+  background: var(--highlight-strong);
+  border: 2px solid var(--paper);
+  cursor: pointer;
+  border-radius: 0;
+}
+
+/* Output */
+.calc-output {
+  background: rgba(244,237,224,.04);
+  border: 1px solid rgba(244,237,224,.2);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.formula-box {
+  font-size: .85rem;
+  background: rgba(255,255,255,.06);
+  padding: 1rem;
+  border-left: 3px solid var(--highlight-strong);
+  overflow-x: auto;
+  color: var(--paper);
+}
+.formula-box .katex { color: var(--paper) !important; font-size: .95rem !important; }
+
+.result-card {
+  border-top: 1px solid rgba(244,237,224,.2);
+  padding-top: 1.25rem;
+}
+.result-card .result-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .72rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: rgba(244,237,224,.6);
+  margin-bottom: .35rem;
+}
+.result-card .result-value {
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  font-size: 2.4rem;
+  line-height: 1;
+  color: var(--highlight-strong);
+  letter-spacing: -.02em;
+}
+.result-card .result-sub {
+  font-size: .85rem;
+  color: rgba(244,237,224,.7);
+  margin-top: .35rem;
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+}
+
+.gap-bar-container {
+  margin-top: .75rem;
+}
+.gap-bar-track {
+  height: 8px;
+  background: rgba(244,237,224,.15);
+  position: relative;
+  margin: .5rem 0;
+}
+.gap-bar-actual {
+  position: absolute;
+  height: 100%;
+  background: var(--highlight-strong);
+  transition: width .3s;
+}
+.gap-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .72rem;
+  color: rgba(244,237,224,.6);
+}
+
+.verdict {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 1rem;
+  padding: .85rem 1rem;
+  border-left: 3px solid var(--highlight-strong);
+  background: rgba(96,165,250,.12);
+  line-height: 1.4;
+}
+
+/* === CIERRE === */
+.closing {
+  background: var(--paper-deep);
+}
+.closing h2 { font-style: italic; font-weight: 300; }
+
+.three-p {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+.p-card {
+  padding: 1.5rem;
+  background: var(--paper);
+  border-left: 3px solid var(--accent);
+  position: relative;
+}
+.p-card .p-num {
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  font-size: 3rem;
+  line-height: 1;
+  color: var(--accent);
+  font-style: italic;
+}
+.p-card h3 {
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  font-size: 1.2rem;
+  margin: .5rem 0;
+}
+.p-card p {
+  font-size: .9rem;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+footer {
+  border-top: 3px double var(--rule);
+  padding: 2.5rem 2rem;
+  max-width: 1240px;
+  margin: 2rem auto 0;
+  font-size: .82rem;
+  color: var(--ink-faded);
+  font-family: 'Inter Tight', sans-serif;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+footer a { color: var(--accent); text-decoration: none; border-bottom: 1px dotted; }
+footer a:hover { background: var(--highlight); }
+
+/* === MOBILE === */
+@media (max-width: 760px) {
+  .hero { padding: 2.5rem 1.25rem 2rem; }
+  section { padding: 2rem 1.25rem; }
+  .masthead-inner { padding: 0 1.25rem; font-size: .7rem; }
+  .synthesis-grid { grid-template-columns: 1fr; }
+  .calc-grid { grid-template-columns: 1fr; gap: 2rem; }
+  .three-p { grid-template-columns: 1fr; }
+  .calculator { padding: 2.5rem 1.25rem; }
+  .preset-row { gap: .5rem; }
+  .preset-btn { padding: .5rem .75rem; font-size: .75rem; }
+  .data-table { font-size: .7rem; }
+  .data-table th, .data-table td { padding: .5rem .55rem; }
+  .result-card .result-value { font-size: 1.8rem; }
+  footer { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <span>Notas sobre valoración · Nº 1</span>
+    <span class="vol">Diciembre 2025</span>
+    <span>EAFIT · Medellín</span>
+  </div>
+</header>
+
+<main>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="eyebrow">Inspirado en A. Damodaran (2025)</div>
+  <h1 class="title">Del acero<br><em>al silicio.</em></h1>
+  <p class="deck">
+    En 124 años, la cima del mercado bursátil estadounidense pasó de una acería con un siglo de hierros forjados a una compañía de chips con tres décadas de existencia. La transición no es solo de sectores: es de lógicas de valor.
+  </p>
+  <div class="byline">
+    <span><strong>Diego Restrepo-Tobón</strong> · Universidad EAFIT · Escuela de Finanzas, Economía y Gobierno</span>
+    <span>Basado en <a href="https://aswathdamodaran.blogspot.com/2025/12/trillion-dollar-market-caps-fairy-tale.html" target="_blank" rel="noopener">A. Damodaran, "Trillion Dollar Market Caps" (2025)</a></span>
+  </div>
+</div>
+
+<!-- VISUALIZACIÓN HISTÓRICA -->
+<section id="viz">
+  <div class="section-label">§ I · Cartografía histórica</div>
+  <h2>Nueve umbrales, tres economías.</h2>
+  <p class="lede">
+    Cada punto marca el año en que una empresa fue la primera en cruzar un umbral de capitalización bursátil. El color revela la transición silenciosa: del óxido del acero al verde patinado de la transición industrial-financiera, hasta el azul tinta de la economía del software y los semiconductores.
+  </p>
+
+  <div class="chart-container">
+    <div class="chart-watermark" id="chart-watermark"></div>
+    <div class="chart-legend">
+      <div class="legend-item"><span class="legend-dot industrial"></span>Economía industrial</div>
+      <div class="legend-item"><span class="legend-dot bridge"></span>Puente (industrial + financiero)</div>
+      <div class="legend-item"><span class="legend-dot tech"></span>Economía tecnológica</div>
+    </div>
+    <svg id="chart-svg" viewBox="0 0 1100 520" preserveAspectRatio="xMidYMid meet" aria-label="Línea de tiempo de umbrales de capitalización bursátil"></svg>
+    <div class="tooltip" id="tooltip"></div>
+  </div>
+
+  <div class="synthesis-grid">
+    <div class="synth-card industrial">
+      <div class="era">1901 — 1955</div>
+      <div class="name">Era industrial</div>
+      <div class="stat-row"><span class="label">Empresas</span><span class="value">US Steel, GM</span></div>
+      <div class="stat-row"><span class="label">Edad promedio al umbral</span><span class="value">24 años</span></div>
+      <div class="stat-row"><span class="label">Crecimiento promedio</span><span class="value">−6.75 %</span></div>
+      <div class="stat-row"><span class="label">Margen neto promedio</span><span class="value">15.3 %</span></div>
+    </div>
+    <div class="synth-card bridge">
+      <div class="era">1995</div>
+      <div class="name">El puente</div>
+      <div class="stat-row"><span class="label">Empresa</span><span class="value">General Electric</span></div>
+      <div class="stat-row"><span class="label">Edad al umbral</span><span class="value">103 años</span></div>
+      <div class="stat-row"><span class="label">Crecimiento</span><span class="value">7.9 %</span></div>
+      <div class="stat-row"><span class="label">Margen neto</span><span class="value">7.8 %</span></div>
+    </div>
+    <div class="synth-card tech">
+      <div class="era">1999 — 2025</div>
+      <div class="name">Era tecnológica</div>
+      <div class="stat-row"><span class="label">Empresas</span><span class="value">MSFT, AAPL, NVDA</span></div>
+      <div class="stat-row"><span class="label">Edad promedio al umbral</span><span class="value">35 años</span></div>
+      <div class="stat-row"><span class="label">Crecimiento promedio</span><span class="value">+38.0 %</span></div>
+      <div class="stat-row"><span class="label">Margen neto promedio</span><span class="value">28.4 %</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- TABLA -->
+<section id="tabla">
+  <div class="section-label">§ II · Datos en bruto</div>
+  <h2>La transición, sin filtros.</h2>
+  <p class="lede">
+    Pasa el cursor sobre las columnas — cada una abre el caso correspondiente en la calculadora. La tabla es del propio Damodaran; los colores son la lectura.
+  </p>
+  <div class="table-wrapper">
+    <table class="data-table" id="data-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th class="industrial" data-preset="ussteel">1901</th>
+          <th class="industrial" data-preset="gm">1955</th>
+          <th class="bridge" data-preset="ge">1995</th>
+          <th class="tech" data-preset="msft">1999</th>
+          <th class="tech" data-preset="aapl1t">2018</th>
+          <th class="tech" data-preset="aapl2t">2020</th>
+          <th class="tech" data-preset="aapl3t">2022</th>
+          <th class="tech" data-preset="nvda4t">2024</th>
+          <th class="tech" data-preset="nvda5t">2025</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Umbral de capitalización</td>
+          <td>$1 B</td><td>$10 B</td><td>$100 B</td><td>$500 B</td>
+          <td>$1 T</td><td>$2 T</td><td>$3 T</td><td>$4 T</td><td>$5 T</td>
+        </tr>
+        <tr class="row-company">
+          <td>Empresa que lo alcanza</td>
+          <td>US Steel</td><td>GM</td><td>GE</td><td>Microsoft</td>
+          <td>Apple</td><td>Apple</td><td>Apple</td><td>Nvidia</td><td>Nvidia</td>
+        </tr>
+        <tr>
+          <td>Edad corporativa</td>
+          <td>1</td><td>47</td><td>103</td><td>13</td>
+          <td>42</td><td>44</td><td>46</td><td>31</td><td>32</td>
+        </tr>
+        <tr>
+          <td>Ingresos año previo (USD B)</td>
+          <td>$0.56</td><td>$9.83</td><td>$60.10</td><td>$14.48</td>
+          <td>$229.20</td><td>$260.17</td><td>$394.30</td><td>$60.92</td><td>$86.60</td>
+        </tr>
+        <tr>
+          <td>Crecimiento ingresos año previo</td>
+          <td>6.5 %</td><td>−20 %</td><td>7.9 %</td><td>28.0 %</td>
+          <td>6 %</td><td>−2.35 %</td><td>7.8 %</td><td>108.9 %</td><td>59.18 %</td>
+        </tr>
+        <tr>
+          <td>Utilidad neta año previo (USD B)</td>
+          <td>$0.13</td><td>$0.81</td><td>$4.70</td><td>$4.49</td>
+          <td>$50.52</td><td>$55.26</td><td>$99.80</td><td>$19.30</td><td>$26.42</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="table-hint">→ Pase el cursor sobre cualquier año para cargarlo en la calculadora interactiva abajo.</p>
+</section>
+
+<!-- CALCULADORA -->
+<div class="calculator">
+  <div class="calc-inner">
+    <div class="section-label" style="color:rgba(244,237,224,.6)">§ III · El espejo de Damodaran</div>
+    <h2>¿Cuántos ingresos hay que generar para justificar este precio?</h2>
+    <p class="lede">
+      Damodaran propone invertir la pregunta de la valoración. En lugar de preguntar si una capitalización es "alta" o "baja", pregunta: dada una capitalización, un costo de equity, márgenes y crecimiento, ¿cuántos ingresos necesita producir la empresa para que el precio se sostenga? Manipule los parámetros. Compare contra los ingresos reales del año previo.
+    </p>
+
+    <div class="preset-row">
+      <span class="preset-label">Casos precargados</span>
+      <button class="preset-btn" data-preset="ussteel">US Steel · 1901</button>
+      <button class="preset-btn" data-preset="msft">Microsoft · 1999</button>
+      <button class="preset-btn active" data-preset="aapl3t">Apple · 2022</button>
+      <button class="preset-btn" data-preset="nvda5t">Nvidia · 2025</button>
+    </div>
+
+    <div class="calc-grid">
+      <div class="calc-inputs">
+        <div class="input-group">
+          <label>Capitalización bursátil <span class="val" id="mcap-val">$3.0 T</span></label>
+          <input type="range" id="mcap" min="1" max="6000" step="1" value="3000">
+        </div>
+        <div class="input-group">
+          <label>Costo de equity (k_e) <span class="val" id="ke-val">8.0 %</span></label>
+          <input type="range" id="ke" min="4" max="15" step="0.1" value="8">
+        </div>
+        <div class="input-group">
+          <label>Crecimiento estable (g) <span class="val" id="g-val">4.0 %</span></label>
+          <input type="range" id="g" min="0" max="6" step="0.1" value="4">
+        </div>
+        <div class="input-group">
+          <label>Margen neto <span class="val" id="margin-val">25.3 %</span></label>
+          <input type="range" id="margin" min="1" max="60" step="0.1" value="25.3">
+        </div>
+        <div class="input-group">
+          <label>Retorno sobre equity (ROE) <span class="val" id="roe-val">175 %</span></label>
+          <input type="range" id="roe" min="5" max="200" step="0.5" value="175">
+        </div>
+      </div>
+
+      <div class="calc-output">
+        <div class="calc-watermark" id="calc-watermark"></div>
+        <div>
+          <div class="result-label">Fórmula (Damodaran 2025)</div>
+          <div class="formula-box">
+            $$R^* = \frac{\text{MCap} \times (k_e - g)}{\text{Margen} \times \left(1 - \tfrac{g}{ROE}\right)}$$
+          </div>
+        </div>
+
+        <div class="result-card">
+          <div class="result-label">Ingresos requeridos para justificar la capitalización</div>
+          <div class="result-value" id="breakeven">$485.4 B</div>
+          <div class="result-sub" id="breakeven-sub">Caso simple: empresa ya en estado estable.</div>
+        </div>
+
+        <div class="result-card">
+          <div class="result-label">Brecha contra ingresos reales del año previo</div>
+          <div class="gap-bar-container">
+            <div class="gap-bar-track">
+              <div class="gap-bar-actual" id="gap-bar"></div>
+            </div>
+            <div class="gap-bar-labels">
+              <span id="gap-actual">Real: $394 B</span>
+              <span id="gap-required">Requerido: $485 B</span>
+            </div>
+          </div>
+          <div class="result-sub" id="gap-ratio">Apple debe multiplicar sus ingresos por <strong>1.23×</strong> para justificar el precio.</div>
+        </div>
+
+        <div class="verdict" id="verdict">
+          <strong>Plausible.</strong> La brecha es razonable para una empresa madura con ventaja competitiva sostenida.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CIERRE 3P -->
+<section class="closing">
+  <div class="section-label">§ IV · Lectura final</div>
+  <h2>El test de las tres P.</h2>
+  <p class="lede">
+    Damodaran propone una herramienta antes de declarar una empresa sobrevalorada o subvalorada: someter los ingresos de breakeven al test de lo posible, lo plausible y lo probable. La tabla histórica nos da una pista: cuando la empresa al tope del mercado deja de parecerse a las anteriores, el ejercicio se vuelve obligatorio.
+  </p>
+  <div class="three-p">
+    <div class="p-card">
+      <div class="p-num">P1</div>
+      <h3>Posible</h3>
+      <p>¿Los ingresos requeridos caben dentro del mercado total al que apunta la empresa? Si exceden el TAM razonable, el cuento de hadas comienza.</p>
+    </div>
+    <div class="p-card">
+      <div class="p-num">P2</div>
+      <h3>Plausible</h3>
+      <p>Dadas la economía del negocio (márgenes brutos, intensidad de capital, dinámica competitiva), ¿es factible alcanzar esos ingresos con esos márgenes?</p>
+    </div>
+    <div class="p-card">
+      <div class="p-num">P3</div>
+      <h3>Probable</h3>
+      <p>Aun siendo posible y plausible, ¿es probable que esta empresa específica capture esa porción del mercado, frente a competidores que crecen en paralelo?</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <span>© 2025 · Diego Restrepo-Tobón · Universidad EAFIT</span>
+  <span>
+    Fuente: <a href="https://aswathdamodaran.blogspot.com/2025/12/trillion-dollar-market-caps-fairy-tale.html" target="_blank" rel="noopener">Damodaran (2025)</a> ·
+    <a href="https://pages.stern.nyu.edu/~adamodar/pc/blog/MktCapBreakeven.xlsx" target="_blank" rel="noopener">Hoja de cálculo original</a>
+  </span>
+</footer>
+
+<script>
+// ============ LOGOS SVG (inline, sin dependencias) ============
+// Cada logo monocromático para que se aplique color via fill="currentColor"
+const logos = {
+  ussteel: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+    <!-- USS — letras tipográficas estilo industrial -->
+    <text x="50" y="48" text-anchor="middle" font-family="Georgia, serif" font-weight="900" font-size="28" letter-spacing="2">USS</text>
+    <line x1="20" y1="58" x2="80" y2="58" stroke="currentColor" stroke-width="2"/>
+    <text x="50" y="76" text-anchor="middle" font-family="Georgia, serif" font-weight="400" font-size="9" letter-spacing="3">U.S. STEEL</text>
+    <text x="50" y="88" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="6" letter-spacing="1">EST. 1901</text>
+  </svg>`,
+
+  gm: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+    <!-- GM — círculo con monograma -->
+    <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" stroke-width="2.5"/>
+    <text x="50" y="60" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-weight="700" font-size="28" letter-spacing="-1">GM</text>
+    <text x="50" y="78" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-weight="400" font-size="6" letter-spacing="2">GENERAL MOTORS</text>
+  </svg>`,
+
+  ge: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+    <!-- GE — monograma circular ornamentado clásico -->
+    <circle cx="50" cy="50" r="36" fill="none" stroke="currentColor" stroke-width="2"/>
+    <circle cx="50" cy="50" r="32" fill="none" stroke="currentColor" stroke-width="0.8"/>
+    <!-- G estilizada -->
+    <path d="M 38 38 Q 32 38 32 50 Q 32 62 38 62 L 50 62 L 50 53 L 44 53" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- E estilizada -->
+    <path d="M 56 38 L 70 38 M 56 38 L 56 62 L 70 62 M 56 50 L 66 50" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+  </svg>`,
+
+  msft: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+    <!-- Microsoft — 4 cuadrados característicos -->
+    <rect x="22" y="22" width="24" height="24"/>
+    <rect x="54" y="22" width="24" height="24"/>
+    <rect x="22" y="54" width="24" height="24"/>
+    <rect x="54" y="54" width="24" height="24"/>
+  </svg>`,
+
+  apple: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+    <!-- Apple — silueta estilizada de manzana mordida -->
+    <path d="M 67.5 65.5 C 65 72 61.5 78 56.5 78 C 51.5 78 50 75 45 75 C 40 75 38 78 33.5 78 C 28.5 77.8 25 72 22.5 65.5 C 18 56 17 41 24 33 C 28 28.5 33.5 26 38.5 26 C 42.5 26 46 28 50 28 C 53.5 28 57 26 62 26 C 65 26 71 26.5 75 32 C 74.5 32.3 67 36.5 67 45 C 67 55 75.5 58 76 58 C 75.5 59.5 73.5 64 67.5 65.5 Z M 56 22 C 58 19.5 60 16 60 12 C 60 11.5 60 11 59.8 10.5 C 56 10.7 51.5 13 49 16 C 47 18 45.5 21.3 45.5 25 C 45.5 25.7 45.5 26.3 45.7 26.5 C 46 26.5 46.5 26.5 47 26.5 C 50.5 26.5 54 24.5 56 22 Z"/>
+  </svg>`,
+
+  nvda: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+    <!-- Nvidia — ojo/swirl característico estilizado -->
+    <path d="M 30 30 C 30 30 42 28 50 35 C 58 42 56 52 50 56 C 44 60 36 58 32 52 C 36 56 42 56 46 53 C 50 50 51 44 47 40 C 43 36 36 36 30 40 L 30 30 Z" />
+    <path d="M 70 70 C 70 70 58 72 50 65 C 42 58 44 48 50 44 C 56 40 64 42 68 48 C 64 44 58 44 54 47 C 50 50 49 56 53 60 C 57 64 64 64 70 60 L 70 70 Z"/>
+    <text x="50" y="92" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-weight="700" font-size="9" letter-spacing="3">NVIDIA</text>
+  </svg>`
+};
+
+// Mapear preset id → logo key
+const presetToLogo = {
+  ussteel: "ussteel",
+  gm: "gm",
+  ge: "ge",
+  msft: "msft",
+  aapl1t: "apple", aapl2t: "apple", aapl3t: "apple",
+  nvda4t: "nvda", nvda5t: "nvda"
+};
+
+// ============ DATA ============
+const data = [
+  { id:"ussteel",  year:1901, threshold:1,    company:"US Steel",  age:1,   rev:0.56,   growth:6.5,    income:0.13,  margin:23.21, era:"industrial" },
+  { id:"gm",       year:1955, threshold:10,   company:"GM",        age:47,  rev:9.83,   growth:-20,    income:0.81,  margin:8.24,  era:"industrial" },
+  { id:"ge",       year:1995, threshold:100,  company:"GE",        age:103, rev:60.10,  growth:7.9,    income:4.70,  margin:7.82,  era:"bridge" },
+  { id:"msft",     year:1999, threshold:500,  company:"Microsoft", age:13,  rev:14.48,  growth:28.0,   income:4.49,  margin:31.01, era:"tech" },
+  { id:"aapl1t",   year:2018, threshold:1000, company:"Apple",     age:42,  rev:229.20, growth:6.0,    income:50.52, margin:22.04, era:"tech" },
+  { id:"aapl2t",   year:2020, threshold:2000, company:"Apple",     age:44,  rev:260.17, growth:-2.35,  income:55.26, margin:21.24, era:"tech" },
+  { id:"aapl3t",   year:2022, threshold:3000, company:"Apple",     age:46,  rev:394.30, growth:7.8,    income:99.80, margin:25.31, era:"tech" },
+  { id:"nvda4t",   year:2024, threshold:4000, company:"Nvidia",    age:31,  rev:60.92,  growth:108.9,  income:19.30, margin:31.68, era:"tech" },
+  { id:"nvda5t",   year:2025, threshold:5000, company:"Nvidia",    age:32,  rev:86.60,  growth:59.18,  income:26.42, margin:30.51, era:"tech" }
+];
+
+const colorMap = { industrial:"#64748b", bridge:"#475569", tech:"#1e3a8a" };
+
+// ============ CHART ============
+const svg = d3.select("#chart-svg");
+const W = 1100, H = 520;
+const margin = { top: 50, right: 80, bottom: 70, left: 80 };
+const innerW = W - margin.left - margin.right;
+const innerH = H - margin.top - margin.bottom;
+
+const g = svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
+
+const xScale = d3.scaleLinear().domain([1895, 2030]).range([0, innerW]);
+const yScale = d3.scaleLog().domain([0.5, 8000]).range([innerH, 0]);
+
+// Grid sutil
+const yTicks = [1, 10, 100, 500, 1000, 2000, 3000, 4000, 5000];
+g.selectAll(".grid-y").data(yTicks).enter().append("line")
+  .attr("x1", 0).attr("x2", innerW)
+  .attr("y1", d => yScale(d)).attr("y2", d => yScale(d))
+  .attr("stroke", "#334155").attr("stroke-opacity", 0.12)
+  .attr("stroke-dasharray", "2,3");
+
+// Eje Y custom
+g.selectAll(".y-label").data(yTicks).enter().append("text")
+  .attr("x", -12).attr("y", d => yScale(d))
+  .attr("text-anchor", "end").attr("dominant-baseline", "middle")
+  .attr("font-family", "JetBrains Mono, monospace")
+  .attr("font-size", "10px").attr("fill", "#64748b")
+  .text(d => d >= 1000 ? `$${d/1000}T` : `$${d}B`);
+
+// Eje X
+const xTicks = [1900, 1920, 1940, 1960, 1980, 2000, 2020];
+g.append("line").attr("x1",0).attr("x2",innerW).attr("y1",innerH).attr("y2",innerH)
+  .attr("stroke","#0f172a").attr("stroke-width",1.2);
+g.selectAll(".x-tick").data(xTicks).enter().append("g").each(function(d){
+  d3.select(this).append("line")
+    .attr("x1",xScale(d)).attr("x2",xScale(d)).attr("y1",innerH).attr("y2",innerH+6)
+    .attr("stroke","#0f172a");
+  d3.select(this).append("text")
+    .attr("x",xScale(d)).attr("y",innerH+22)
+    .attr("text-anchor","middle")
+    .attr("font-family","JetBrains Mono, monospace").attr("font-size","11px")
+    .attr("fill","#334155").text(d);
+});
+
+// Línea conectora
+const lineGen = d3.line()
+  .x(d => xScale(d.year))
+  .y(d => yScale(d.threshold))
+  .curve(d3.curveMonotoneX);
+
+g.append("path")
+  .datum(data)
+  .attr("d", lineGen)
+  .attr("fill", "none")
+  .attr("stroke", "#0f172a")
+  .attr("stroke-width", 1)
+  .attr("stroke-dasharray", "4,4")
+  .attr("opacity", 0.35);
+
+// Anotaciones de "saltos"
+const jumps = [
+  { from: 0, to: 1, label: "54 años" },
+  { from: 1, to: 2, label: "40 años" },
+  { from: 2, to: 3, label: "4 años" },
+  { from: 3, to: 4, label: "19 años" },
+  { from: 6, to: 7, label: "2 años" },
+  { from: 7, to: 8, label: "1 año" }
+];
+g.selectAll(".jump-label").data(jumps).enter().append("text")
+  .attr("x", d => (xScale(data[d.from].year) + xScale(data[d.to].year))/2)
+  .attr("y", d => (yScale(data[d.from].threshold) + yScale(data[d.to].threshold))/2 - 8)
+  .attr("text-anchor","middle")
+  .attr("font-family","Fraunces, serif")
+  .attr("font-style","italic")
+  .attr("font-size","11px")
+  .attr("fill","#64748b")
+  .text(d => d.label);
+
+// Puntos
+const tooltip = d3.select("#tooltip");
+
+const dotsG = g.append("g");
+const dots = dotsG.selectAll(".dot").data(data).enter().append("g")
+  .attr("class","dot-group")
+  .attr("transform", d => `translate(${xScale(d.year)},${yScale(d.threshold)})`)
+  .style("cursor","pointer");
+
+dots.append("circle")
+  .attr("r", 14)
+  .attr("fill", d => colorMap[d.era])
+  .attr("stroke", "#0f172a").attr("stroke-width", 2)
+  .attr("opacity", 0)
+  .transition().duration(800).delay((d,i) => i*120)
+  .attr("opacity", 1);
+
+dots.append("circle")
+  .attr("r", 4)
+  .attr("fill", "#ffffff")
+  .attr("opacity", 0)
+  .transition().duration(800).delay((d,i) => i*120 + 200)
+  .attr("opacity", 1);
+
+// Etiquetas de empresa (alternando arriba/abajo para evitar superposición)
+dots.append("text")
+  .attr("text-anchor", (d,i) => i < 3 ? "start" : "middle")
+  .attr("x", (d,i) => i < 3 ? 22 : 0)
+  .attr("y", (d,i) => {
+    if (i < 3) return 4;
+    return (i % 2 === 0) ? -22 : 30;
+  })
+  .attr("font-family","Fraunces, serif")
+  .attr("font-weight", 700)
+  .attr("font-size", "13px")
+  .attr("fill", "#0f172a")
+  .text(d => `${d.company}`)
+  .attr("opacity", 0)
+  .transition().duration(600).delay((d,i) => i*120 + 400)
+  .attr("opacity", 1);
+
+dots.append("text")
+  .attr("text-anchor", (d,i) => i < 3 ? "start" : "middle")
+  .attr("x", (d,i) => i < 3 ? 22 : 0)
+  .attr("y", (d,i) => {
+    if (i < 3) return 18;
+    return (i % 2 === 0) ? -8 : 44;
+  })
+  .attr("font-family","JetBrains Mono, monospace")
+  .attr("font-size", "10px")
+  .attr("fill", "#64748b")
+  .text(d => `${d.year} · ${d.threshold>=1000?'$'+d.threshold/1000+'T':'$'+d.threshold+'B'}`)
+  .attr("opacity", 0)
+  .transition().duration(600).delay((d,i) => i*120 + 400)
+  .attr("opacity", 1);
+
+// Hover
+const chartWatermark = document.getElementById("chart-watermark");
+
+dots.on("mouseenter", function(event, d) {
+  d3.select(this).select("circle").transition().duration(150).attr("r", 18);
+  const peImplied = (d.threshold / d.income).toFixed(1);
+  const psImplied = (d.threshold / d.rev).toFixed(1);
+  tooltip.html(`
+    <strong>${d.company} · ${d.year}</strong>
+    <div class="tooltip-row"><span>Capitalización</span><span>$${d.threshold>=1000?d.threshold/1000+'T':d.threshold+'B'}</span></div>
+    <div class="tooltip-row"><span>Edad corporativa</span><span>${d.age} años</span></div>
+    <div class="tooltip-row"><span>Ingresos previos</span><span>$${d.rev}B</span></div>
+    <div class="tooltip-row"><span>Crecimiento</span><span>${d.growth>0?'+':''}${d.growth}%</span></div>
+    <div class="tooltip-row"><span>Utilidad neta</span><span>$${d.income}B</span></div>
+    <div class="tooltip-row"><span>Margen neto</span><span>${d.margin.toFixed(1)}%</span></div>
+    <div class="tooltip-row"><span>P/E implícito</span><span>${peImplied}×</span></div>
+    <div class="tooltip-row"><span>P/Ventas implícito</span><span>${psImplied}×</span></div>
+  `)
+  .style("opacity", 1);
+
+  // Mostrar watermark del logo correspondiente
+  const logoKey = presetToLogo[d.id];
+  const logoColor = colorMap[d.era];
+  if (logos[logoKey]) {
+    chartWatermark.innerHTML = logos[logoKey];
+    chartWatermark.style.color = logoColor;
+    chartWatermark.classList.add("visible");
+  }
+})
+.on("mousemove", function(event) {
+  const container = document.querySelector(".chart-container").getBoundingClientRect();
+  tooltip
+    .style("left", (event.clientX - container.left + 15) + "px")
+    .style("top", (event.clientY - container.top + 15) + "px");
+})
+.on("mouseleave", function() {
+  d3.select(this).select("circle").transition().duration(150).attr("r", 14);
+  tooltip.style("opacity", 0);
+  chartWatermark.classList.remove("visible");
+})
+.on("click", function(event, d) {
+  loadPreset(d.id);
+  document.querySelector(".calculator").scrollIntoView({behavior:"smooth", block:"start"});
+});
+
+// ============ CALCULADORA ============
+
+// Presets — incluye ROE estimado y margen real
+const presets = {
+  ussteel:  { mcap:1,    margin:23.2, roe:13,  rev:0.56,   company:"US Steel · 1901" },
+  gm:       { mcap:10,   margin:8.2,  roe:18,  rev:9.83,   company:"GM · 1955" },
+  ge:       { mcap:100,  margin:7.8,  roe:23,  rev:60.10,  company:"GE · 1995" },
+  msft:     { mcap:500,  margin:31.0, roe:35,  rev:14.48,  company:"Microsoft · 1999" },
+  aapl1t:   { mcap:1000, margin:22.0, roe:49,  rev:229.20, company:"Apple · 2018" },
+  aapl2t:   { mcap:2000, margin:21.2, roe:75,  rev:260.17, company:"Apple · 2020" },
+  aapl3t:   { mcap:3000, margin:25.3, roe:175, rev:394.30, company:"Apple · 2022" },
+  nvda4t:   { mcap:4000, margin:31.7, roe:64,  rev:60.92,  company:"Nvidia · 2024" },
+  nvda5t:   { mcap:5000, margin:53.0, roe:64,  rev:86.60,  company:"Nvidia · 2025" }
+};
+
+const $mcap = document.getElementById("mcap");
+const $ke = document.getElementById("ke");
+const $g = document.getElementById("g");
+const $margin = document.getElementById("margin");
+const $roe = document.getElementById("roe");
+
+const $mcapVal = document.getElementById("mcap-val");
+const $keVal = document.getElementById("ke-val");
+const $gVal = document.getElementById("g-val");
+const $marginVal = document.getElementById("margin-val");
+const $roeVal = document.getElementById("roe-val");
+
+const $breakeven = document.getElementById("breakeven");
+const $breakevenSub = document.getElementById("breakeven-sub");
+const $gapBar = document.getElementById("gap-bar");
+const $gapActual = document.getElementById("gap-actual");
+const $gapRequired = document.getElementById("gap-required");
+const $gapRatio = document.getElementById("gap-ratio");
+const $verdict = document.getElementById("verdict");
+
+let currentPreset = "aapl3t";
+
+function fmtMcap(v) {
+  if (v >= 1000) return `$${(v/1000).toFixed(1)} T`;
+  return `$${v} B`;
+}
+function fmtRev(v) {
+  if (v >= 1000) return `$${(v/1000).toFixed(2)} T`;
+  return `$${v.toFixed(1)} B`;
+}
+
+function compute() {
+  const mcap   = +$mcap.value;          // en USD B
+  const ke     = +$ke.value / 100;
+  const gRate  = +$g.value / 100;
+  const margin = +$margin.value / 100;
+  const roe    = +$roe.value / 100;
+
+  // Fórmula Damodaran simplificada (modelo Gordon equity en estado estable)
+  // MCap = NI * (1 - g/ROE) / (ke - g)
+  // donde NI = Revenue * margen
+  // → R* = MCap * (ke - g) / [margen * (1 - g/ROE)]
+  const payout = 1 - gRate / roe;
+  let breakeven = mcap * (ke - gRate) / (margin * payout);
+  if (breakeven < 0 || !isFinite(breakeven)) breakeven = 0;
+
+  $mcapVal.textContent = fmtMcap(mcap);
+  $keVal.textContent = (ke*100).toFixed(1) + " %";
+  $gVal.textContent = (gRate*100).toFixed(1) + " %";
+  $marginVal.textContent = (margin*100).toFixed(1) + " %";
+  $roeVal.textContent = (roe*100).toFixed(0) + " %";
+
+  $breakeven.textContent = fmtRev(breakeven);
+
+  const preset = presets[currentPreset];
+  const realRev = preset.rev;
+  const ratio = breakeven / realRev;
+
+  $gapActual.textContent = `Real: ${fmtRev(realRev)}`;
+  $gapRequired.textContent = `Requerido: ${fmtRev(breakeven)}`;
+
+  // Bar: el real como fracción del requerido
+  const pct = Math.min(100, (realRev / breakeven) * 100);
+  $gapBar.style.width = pct + "%";
+
+  $gapRatio.innerHTML = `${preset.company.split(' · ')[0]} debe multiplicar sus ingresos por <strong>${ratio.toFixed(2)}×</strong> para justificar la capitalización.`;
+
+  // Veredicto narrativo
+  let verdict = "";
+  if (ratio < 1.3) {
+    verdict = `<strong>Posible y plausible.</strong> La brecha es razonable. Una empresa madura puede sostener este precio sin gimnasia operativa extraordinaria.`;
+  } else if (ratio < 2.5) {
+    verdict = `<strong>Plausible, no garantizado.</strong> Requiere ejecución sostenida y ventajas competitivas duraderas. Aplica el test de las 3P.`;
+  } else if (ratio < 5) {
+    verdict = `<strong>En la frontera de lo plausible.</strong> Necesita un mercado en expansión rápida, dominancia, o ambos. Vigile la competencia.`;
+  } else {
+    verdict = `<strong>Cuento de hadas.</strong> Los ingresos requeridos pueden exceder el mercado total. La probabilidad de cumplir agregadamente el sector es baja — ese es el "big market delusion" de Damodaran.`;
+  }
+  $verdict.innerHTML = verdict;
+
+  if (gRate * 100 < 1) {
+    $breakevenSub.textContent = "Caso simple: empresa ya en estado estable, sin espera.";
+  } else {
+    $breakevenSub.textContent = `Suponiendo crecimiento estable de ${(gRate*100).toFixed(1)}% y tasa de reinversión ${((1-payout)*100).toFixed(1)}%.`;
+  }
+}
+
+const calcWatermark = document.getElementById("calc-watermark");
+
+function updateCalcWatermark(presetId) {
+  const logoKey = presetToLogo[presetId];
+  if (!logos[logoKey]) {
+    calcWatermark.classList.remove("visible");
+    return;
+  }
+  // Fade out, swap, fade in para que el cambio se sienta
+  calcWatermark.classList.remove("visible");
+  setTimeout(() => {
+    calcWatermark.innerHTML = logos[logoKey];
+    // En la calculadora el fondo es oscuro, por lo que el logo va en blanco translúcido
+    calcWatermark.style.color = "#ffffff";
+    calcWatermark.classList.add("visible");
+  }, 250);
+}
+
+function loadPreset(id) {
+  if (!presets[id]) return;
+  currentPreset = id;
+  const p = presets[id];
+  $mcap.value = p.mcap;
+  $margin.value = p.margin;
+  $roe.value = p.roe;
+  // los demás (ke, g) se mantienen como "supuestos del analista"
+  document.querySelectorAll(".preset-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.preset === id);
+  });
+  updateCalcWatermark(id);
+  compute();
+}
+
+// Eventos sliders
+[$mcap, $ke, $g, $margin, $roe].forEach(el => {
+  el.addEventListener("input", compute);
+});
+
+// Eventos presets
+document.querySelectorAll(".preset-btn").forEach(btn => {
+  btn.addEventListener("click", () => loadPreset(btn.dataset.preset));
+});
+
+// Eventos tabla
+document.querySelectorAll("#data-table th[data-preset]").forEach(th => {
+  th.addEventListener("click", () => {
+    loadPreset(th.dataset.preset);
+    document.querySelector(".calculator").scrollIntoView({behavior:"smooth", block:"start"});
+  });
+});
+
+// Init
+updateCalcWatermark(currentPreset);
+compute();
+</script>
+</body>
+</html>
